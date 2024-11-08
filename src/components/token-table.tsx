@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import {useState, useEffect} from 'react';
+import {useQuery} from '@tanstack/react-query';
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
   getSortedRowModel,
   SortingState,
-} from "@tanstack/react-table";
+  ColumnDef,
+} from '@tanstack/react-table';
 import {
   DndContext,
   closestCenter,
@@ -14,15 +15,18 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-} from "@dnd-kit/core";
-import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {restrictToHorizontalAxis} from '@dnd-kit/modifiers';
 import {
   SortableContext,
   arrayMove,
   horizontalListSortingStrategy,
   useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+} from '@dnd-kit/sortable';
+import {CSS} from '@dnd-kit/utilities';
+import {Loader} from 'lucide-react';
+import {ResponsiveLine} from '@nivo/line';
 import {
   Table,
   TableBody,
@@ -30,21 +34,34 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { CustomizeModal } from "@/components/customize-dialog";
-import { ResponsiveLine } from "@nivo/line";
+} from '@/components/ui/table';
+import {Button} from '@/components/ui/button';
+import {CustomizeModal} from '@/components/customize-dialog';
+import {API_CONSTANTS} from '@/utils/constants';
+import {Token} from '@/types/token';
+import {fetchTokens} from '@/services/coingecko';
 
-const fetchTokens = async () => {
-  const response = await fetch(
-    "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true"
-  );
-  return response.json();
+interface SortableTableHeadProps
+  extends React.HTMLAttributes<HTMLTableCellElement> {
+  id: string;
+}
+
+interface TokenTableProps {
+  activeView: string;
+  setActiveView: (view: string) => void;
+}
+
+type TokenColumn = ColumnDef<Token> & {
+  accessorFn?: (row: Token) => string | number | number[] | null;
 };
 
-const SortableTableHead = ({ children, ...props }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: props.id });
+const SortableTableHead: React.FC<SortableTableHeadProps> = ({
+  children,
+  id,
+  ...props
+}) => {
+  const {attributes, listeners, setNodeRef, transform, transition} =
+    useSortable({id});
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -64,78 +81,81 @@ const SortableTableHead = ({ children, ...props }) => {
   );
 };
 
-export function TokenTable({ activeView, setActiveView }) {
+export function TokenTable({activeView, setActiveView}: TokenTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columns, setColumns] = useState([
-    { id: "name", header: "Coin", accessorFn: (row) => row.name },
+  const [columns, setColumns] = useState<TokenColumn[]>([
+    {id: 'name', header: 'Coin', accessorFn: (row: Token) => row.name},
     {
-      id: "current_price",
-      header: "Price",
-      accessorFn: (row) => `$${row.current_price.toLocaleString()}`,
+      id: 'current_price',
+      header: 'Price',
+      accessorFn: (row: Token) => `$${row.current_price.toLocaleString()}`,
     },
     {
-      id: "price_change_percentage_1h",
-      header: "1h",
-      accessorFn: (row) => {
-        return "N/A";
-      },
+      id: 'price_change_percentage_1h',
+      header: '1h',
+      accessorFn: () => 'N/A',
     },
     {
-      id: "price_change_percentage_24h",
-      header: "24h",
-      accessorFn: (row) => `${row.price_change_percentage_24h.toFixed(2)}%`,
+      id: 'price_change_percentage_24h',
+      header: '24h',
+      accessorFn: (row: Token) =>
+        `${row.price_change_percentage_24h.toFixed(2)}%`,
     },
     {
-      id: "price_change_percentage_7d_in_currency",
-      header: "7d",
-      accessorFn: (row) => {
+      id: 'price_change_percentage_7d_in_currency',
+      header: '7d',
+      accessorFn: (row: Token) => {
         if (row.sparkline_in_7d && row.sparkline_in_7d.price.length > 0) {
           const prices = row.sparkline_in_7d.price;
           const change =
             ((prices[prices.length - 1] - prices[0]) / prices[0]) * 100;
           return `${change.toFixed(2)}%`;
         }
-        return "N/A";
+        return 'N/A';
       },
     },
     {
-      id: "total_volume",
-      header: "24h Volume",
-      accessorFn: (row) => `$${row.total_volume.toLocaleString()}`,
+      id: 'total_volume',
+      header: '24h Volume',
+      accessorFn: (row: Token) => `$${row.total_volume.toLocaleString()}`,
     },
     {
-      id: "market_cap",
-      header: "Market Cap",
-      accessorFn: (row) => `$${row.market_cap.toLocaleString()}`,
+      id: 'market_cap',
+      header: 'Market Cap',
+      accessorFn: (row: Token) => `$${row.market_cap.toLocaleString()}`,
     },
     {
-      id: "sparkline",
-      header: "Last 7 Days",
-      accessorFn: (row) => row.sparkline_in_7d.price,
+      id: 'sparkline',
+      header: 'Last 7 Days',
+      accessorFn: (row: Token) => row.sparkline_in_7d.price,
     },
   ]);
-
-  console.log(columns, "ajnsj");
-
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
-  const [savedViews, setSavedViews] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("savedViews");
-      return saved ? JSON.parse(saved) : {};
+  const [savedViews, setSavedViews] = useState<Record<string, TokenColumn[]>>(
+    () => {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('savedViews');
+        return saved ? JSON.parse(saved) : {};
+      }
+      return {};
+    },
+  );
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('savedViews', JSON.stringify(savedViews));
     }
-    return {};
-  });
+  }, [savedViews]);
 
   const {
     data: tokens,
-    isLoading,
+    status,
     error,
-  } = useQuery({
-    queryKey: ["tokens"],
+  } = useQuery<Token[], Error>({
+    queryKey: ['tokens'],
     queryFn: fetchTokens,
+    refetchInterval: API_CONSTANTS.CACHE_DURATION,
   });
-
-  console.log(tokens, "tokekek");
 
   const table = useReactTable({
     data: tokens || [],
@@ -150,43 +170,48 @@ export function TokenTable({ activeView, setActiveView }) {
 
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor),
   );
 
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
+  const handleDragEnd = (event: DragEndEvent) => {
+    const {active, over} = event;
 
-    if (active.id !== over.id) {
-      setColumns((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
+    if (active.id !== over?.id) {
+      setColumns(items => {
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over?.id);
         return arrayMove(items, oldIndex, newIndex);
       });
     }
   };
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("savedViews", JSON.stringify(savedViews));
-    }
-  }, [savedViews]);
+  if (status === 'pending') return <Loader className="animate-spin" />;
 
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error fetching data</div>;
+  if (status === 'error') {
+    if (error.message.includes('429')) {
+      return (
+        <div>
+          We&apos;re currently experiencing high demand. Please try again in a
+          few minutes.
+        </div>
+      );
+    }
+    return <div>Error fetching data. Please try again later.</div>;
+  }
 
   return (
     <div>
       <div className="flex space-x-2 mb-4">
         <Button
-          variant={activeView === "Trending" ? "default" : "outline"}
-          onClick={() => setActiveView("Trending")}
+          variant={activeView === 'Trending' ? 'default' : 'outline'}
+          onClick={() => setActiveView('Trending')}
         >
           Trending
         </Button>
-        {Object.keys(savedViews).map((viewName) => (
+        {Object.keys(savedViews).map(viewName => (
           <Button
             key={viewName}
-            variant={activeView === viewName ? "default" : "outline"}
+            variant={activeView === viewName ? 'default' : 'outline'}
             onClick={() => {
               setActiveView(viewName);
               setColumns(savedViews[viewName]);
@@ -208,12 +233,12 @@ export function TokenTable({ activeView, setActiveView }) {
                 modifiers={[restrictToHorizontalAxis]}
               >
                 <SortableContext
-                  items={columns.map((col) => col.id)}
+                  items={columns.map(col => col.id as string)}
                   strategy={horizontalListSortingStrategy}
                 >
-                  {columns.map((column) => (
-                    <SortableTableHead key={column.id} id={column.id}>
-                      {column.header}
+                  {columns.map(column => (
+                    <SortableTableHead key={column.id} id={column.id as string}>
+                      {column.header as string}
                     </SortableTableHead>
                   ))}
                 </SortableContext>
@@ -221,30 +246,30 @@ export function TokenTable({ activeView, setActiveView }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.map((row) => (
+            {table.getRowModel().rows.map(row => (
               <TableRow key={row.id}>
-                {columns.map((column) => (
+                {columns.map(column => (
                   <TableCell key={column.id}>
-                    {column.id === "sparkline" ? (
-                      <div style={{ width: 120, height: 40 }}>
+                    {column.id === 'sparkline' ? (
+                      <div style={{width: 120, height: 40}}>
                         <ResponsiveLine
                           data={[
                             {
-                              id: "sparkline",
-                              data: row.original.sparkline_in_7d.price.map(
-                                (price, index) => ({
-                                  x: index,
-                                  y: price,
-                                })
-                              ),
+                              id: 'sparkline',
+                              data: (
+                                row.original.sparkline_in_7d.price as number[]
+                              ).map((price, index) => ({
+                                x: index,
+                                y: price,
+                              })),
                             },
                           ]}
-                          margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
-                          xScale={{ type: "point" }}
+                          margin={{top: 5, right: 5, bottom: 5, left: 5}}
+                          xScale={{type: 'point'}}
                           yScale={{
-                            type: "linear",
-                            min: "auto",
-                            max: "auto",
+                            type: 'linear',
+                            min: 'auto',
+                            max: 'auto',
                             stacked: true,
                             reverse: false,
                           }}
@@ -259,11 +284,16 @@ export function TokenTable({ activeView, setActiveView }) {
                           enableArea={true}
                           areaOpacity={0.1}
                           useMesh={true}
-                          colors={{ scheme: "category10" }}
+                          colors={{scheme: 'category10'}}
                         />
                       </div>
                     ) : (
-                      flexRender(column.accessorFn(row.original), {})
+                      flexRender(
+                        column.accessorFn
+                          ? column.accessorFn(row.original)
+                          : null,
+                        {},
+                      )
                     )}
                   </TableCell>
                 ))}
@@ -277,7 +307,6 @@ export function TokenTable({ activeView, setActiveView }) {
         onClose={() => setIsCustomizeModalOpen(false)}
         columns={columns}
         setColumns={setColumns}
-        savedViews={savedViews}
         setSavedViews={setSavedViews}
         setActiveView={setActiveView}
       />
