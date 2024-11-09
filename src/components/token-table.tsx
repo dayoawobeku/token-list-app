@@ -188,15 +188,13 @@ export function TokenTable({activeView, setActiveView}: TokenTableProps) {
   if (status === 'pending') return <Loader className="animate-spin" />;
 
   if (status === 'error') {
-    if (error.message.includes('429')) {
-      return (
-        <div>
-          We&apos;re currently experiencing high demand. Please try again in a
-          few minutes.
-        </div>
-      );
-    }
-    return <div>Error fetching data. Please try again later.</div>;
+    const errorMessage =
+      error instanceof Error ? error.message : 'An error occurred';
+    return (
+      <div className="text-center p-4 bg-red-100 text-red-500 rounded-md">
+        {errorMessage}
+      </div>
+    );
   }
 
   return (

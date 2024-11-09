@@ -23,7 +23,7 @@ export default function Home() {
   return (
     <QueryClientProvider client={queryClient}>
       <main
-        className={`${geistSans.variable} ${geistMono.variable} container mx-auto px-4 py-8 font-[family-name:var(--font-geist-sans)]`}
+        className={`${geistSans.variable} ${geistMono.variable} xl:container mx-auto px-4 py-8 font-[family-name:var(--font-geist-sans)]`}
       >
         <h1 className="text-3xl font-bold mb-8">
           Cryptocurrency Prices by Market Cap
