@@ -18,7 +18,7 @@ export function SortableTableHead({
   ...props
 }: SortableTableHeadProps) {
   const {attributes, listeners, setNodeRef, transform, transition} =
-    useSortable({id, disabled: !isSortable});
+    useSortable({id});
 
   const style = {
     transform: CSS.Transform.toString(transform),

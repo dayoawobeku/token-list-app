@@ -19,6 +19,8 @@ export type TokenColumn = ColumnDef<Token> & {
   accessorFn?: (row: Token) => string | number | number[] | null;
 };
 
+export type TokenColumnWithStringId = TokenColumn & {id: string};
+
 export interface GlobalData {
   data: {
     active_cryptocurrencies: number;

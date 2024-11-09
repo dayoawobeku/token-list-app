@@ -1,15 +1,9 @@
 import Image from 'next/image';
 import {ResponsiveLine} from '@nivo/line';
-import {Token, TokenColumn} from '@/types/token';
+import {Token, TokenColumnWithStringId} from '@/types/token';
+import {getPercentageChange} from '@/helpers';
 
-const getPercentageChange = (value: number) => {
-  const isPositive = value >= 0;
-  const color = isPositive ? 'text-green-500' : 'text-red-500';
-  const arrow = isPositive ? '↑' : '↓';
-  return {color, arrow};
-};
-
-export const defaultColumns: TokenColumn[] = [
+export const defaultColumns: TokenColumnWithStringId[] = [
   {
     id: 'index',
     header: '#',

@@ -6,12 +6,13 @@ import {API_CONSTANTS} from '@/utils/constants';
 import {fetchGlobalData} from '@/services/coingecko';
 import {Skeleton} from '@/components/ui/skeleton';
 import {GlobalData} from '@/types/token';
+import {getPercentageChange} from '@/helpers';
 
-const SkeletonCard = () => (
+const SkeletonCard = ({title}: {title: string}) => (
   <Card>
     <CardContent className="py-3.5 space-y-2">
       <Skeleton className="h-7 w-3/4" />
-      <Skeleton className="h-5 w-1/2" />
+      <p className="text-sm font-semibold text-neutral-600">{title}</p>
     </CardContent>
   </Card>
 );
@@ -38,8 +39,8 @@ export function GlobalDataCard() {
   if (status === 'pending') {
     return (
       <div className="flex flex-col gap-3 justify-between">
-        <SkeletonCard />
-        <SkeletonCard />
+        <SkeletonCard title="Market Cap" />
+        <SkeletonCard title="24h Trading Volume" />
       </div>
     );
   }
@@ -57,9 +58,12 @@ export function GlobalDataCard() {
 
   const {data: marketData} = data;
 
+  const {color: marketCapPercentageColor, arrow} = getPercentageChange(
+    marketData.market_cap_change_percentage_24h_usd,
+  );
+
   const marketCapPercentage24h =
     marketData.market_cap_change_percentage_24h_usd;
-  const isMarketCapPercentage24hPositive = marketCapPercentage24h >= 0;
 
   return (
     <div className="flex flex-col gap-3 justify-between">
@@ -71,14 +75,8 @@ export function GlobalDataCard() {
             </p>
             <div className="flex items-center gap-3 text-sm">
               <p className="font-semibold text-neutral-600">Market Cap</p>
-              <p
-                className={`font-semibold ${
-                  isMarketCapPercentage24hPositive
-                    ? 'text-green-500'
-                    : 'text-red-500'
-                }`}
-              >
-                {isMarketCapPercentage24hPositive ? '↑' : '↓'}{' '}
+              <p className={`font-semibold ${marketCapPercentageColor}`}>
+                {arrow}
                 {Math.abs(marketCapPercentage24h).toFixed(1)}%
               </p>
             </div>

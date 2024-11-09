@@ -5,7 +5,7 @@ import {Skeleton} from '@/components/ui/skeleton';
 import {TrendingData} from '@/types/token';
 import {fetchTrending} from '@/services/coingecko';
 import {API_CONSTANTS} from '@/utils/constants';
-import {CardLayout} from './card-layout';
+import {CardLayout} from '@/components/card-layout';
 
 export function TrendingCard() {
   const {data, status, error} = useQuery<TrendingData>({

@@ -33,10 +33,17 @@ import {
 import {Button} from '@/components/ui/button';
 import {CustomizeDialog} from '@/components/customize-dialog';
 import {API_CONSTANTS} from '@/utils/constants';
-import {Token, TokenColumn} from '@/types/token';
+import {Token, TokenColumnWithStringId} from '@/types/token';
 import {fetchTokens} from '@/services/coingecko';
 import {SortableTableHead} from './sortable-tablehead';
 import {defaultColumns} from './default-columns';
+
+const typedDefaultColumns: TokenColumnWithStringId[] = defaultColumns.map(
+  col => ({
+    ...col,
+    id: col.id as string,
+  }),
+);
 
 interface TokenTableProps {
   activeView: string;
@@ -45,24 +52,41 @@ interface TokenTableProps {
 
 export function TokenTable({activeView, setActiveView}: TokenTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columns, setColumns] = useState<TokenColumn[]>(defaultColumns);
+  const [columns, setColumns] =
+    useState<TokenColumnWithStringId[]>(typedDefaultColumns);
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
-  const [savedViews, setSavedViews] = useState<Record<string, TokenColumn[]>>(
-    () => {
-      if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem('savedViews');
-        return saved ? JSON.parse(saved) : {Trending: defaultColumns};
-      }
-      return {Trending: defaultColumns};
-    },
-  );
+  const [savedViews, setSavedViews] = useState<
+    Record<string, TokenColumnWithStringId[]>
+  >(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('savedViews');
+      return saved ? JSON.parse(saved) : {Trending: defaultColumns};
+    }
+    return {Trending: defaultColumns};
+  });
 
   useEffect(() => {
-    if (activeView === 'Trending') {
-      setColumns(defaultColumns);
-    } else if (savedViews[activeView]) {
-      setColumns(savedViews[activeView]);
-    }
+    const loadSavedView = () => {
+      if (activeView === 'Trending') {
+        setColumns(defaultColumns);
+      } else if (savedViews[activeView]) {
+        const savedColumns = savedViews[activeView];
+        const updatedColumns = savedColumns.map(savedColumn => {
+          const defaultColumn = defaultColumns.find(
+            col => col.id === savedColumn.id,
+          );
+          return {
+            ...savedColumn,
+            accessorFn: defaultColumn?.accessorFn,
+            cell: defaultColumn?.cell,
+            sortingFn: defaultColumn?.sortingFn,
+          };
+        });
+        setColumns(updatedColumns);
+      }
+    };
+
+    loadSavedView();
   }, [activeView, savedViews]);
 
   const {
@@ -212,6 +236,7 @@ export function TokenTable({activeView, setActiveView}: TokenTableProps) {
         savedViews={savedViews}
         setSavedViews={setSavedViews}
         setActiveView={setActiveView}
+        activeView={activeView}
       />
     </div>
   );
