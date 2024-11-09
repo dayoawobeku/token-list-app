@@ -89,6 +89,7 @@ export function GlobalDataCard() {
             src="https://www.coingecko.com/total_market_cap.svg"
             width={157}
             height={58}
+            className="hidden xl:block"
           />
         </CardContent>
       </Card>
@@ -110,6 +111,7 @@ export function GlobalDataCard() {
             src="https://www.coingecko.com/total_volume.svg"
             width={157}
             height={58}
+            className="hidden xl:block"
           />
         </CardContent>
       </Card>

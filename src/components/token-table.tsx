@@ -200,25 +200,37 @@ export function TokenTable({activeView, setActiveView}: TokenTableProps) {
   return (
     <div>
       <div className="flex space-x-2 mb-4">
-        <Button
-          variant={activeView === 'Trending' ? 'default' : 'outline'}
-          onClick={() => setActiveView('Trending')}
-        >
-          Trending
-        </Button>
-        {Object.keys(savedViews).map(viewName => (
-          <Button
-            key={viewName}
-            variant={activeView === viewName ? 'default' : 'outline'}
-            onClick={() => {
-              setActiveView(viewName);
-              setColumns(savedViews[viewName]);
-            }}
-          >
-            {viewName}
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={activeView === 'Trending' ? 'secondary' : 'outline'}
+              onClick={() => setActiveView('Trending')}
+              className={`${
+                activeView === 'Trending' ? 'font-semibold' : 'text-neutral-500'
+              }`}
+            >
+              Trending
+            </Button>
+            {Object.keys(savedViews).map(viewName => (
+              <Button
+                key={viewName}
+                variant={activeView === viewName ? 'secondary' : 'outline'}
+                className={`${
+                  activeView === viewName ? 'font-semibold' : 'text-neutral-500'
+                }`}
+                onClick={() => {
+                  setActiveView(viewName);
+                  setColumns(savedViews[viewName]);
+                }}
+              >
+                {viewName}
+              </Button>
+            ))}
+          </div>
+          <Button onClick={() => setIsCustomizeModalOpen(true)}>
+            Customize
           </Button>
-        ))}
-        <Button onClick={() => setIsCustomizeModalOpen(true)}>Customize</Button>
+        </div>
       </div>
       <div className="rounded-md border">
         <Table>
