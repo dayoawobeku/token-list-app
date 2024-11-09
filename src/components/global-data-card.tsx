@@ -57,6 +57,10 @@ export function GlobalDataCard() {
 
   const {data: marketData} = data;
 
+  const marketCapPercentage24h =
+    marketData.market_cap_change_percentage_24h_usd;
+  const isMarketCapPercentage24hPositive = marketCapPercentage24h >= 0;
+
   return (
     <div className="flex flex-col gap-3 justify-between">
       <Card>
@@ -69,18 +73,13 @@ export function GlobalDataCard() {
               <p className="font-semibold text-neutral-600">Market Cap</p>
               <p
                 className={`font-semibold ${
-                  marketData.market_cap_change_percentage_24h_usd >= 0
+                  isMarketCapPercentage24hPositive
                     ? 'text-green-500'
                     : 'text-red-500'
                 }`}
               >
-                {marketData.market_cap_change_percentage_24h_usd >= 0
-                  ? '↑'
-                  : '↓'}{' '}
-                {Math.abs(
-                  marketData.market_cap_change_percentage_24h_usd,
-                ).toFixed(1)}
-                %
+                {isMarketCapPercentage24hPositive ? '↑' : '↓'}{' '}
+                {Math.abs(marketCapPercentage24h).toFixed(1)}%
               </p>
             </div>
           </div>

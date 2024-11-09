@@ -4,7 +4,7 @@ import {Skeleton} from '@/components/ui/skeleton';
 import {fetchCategories} from '@/services/coingecko';
 import {CategoryData} from '@/types/token';
 import {API_CONSTANTS} from '@/utils/constants';
-import CardLayout from './card-layout';
+import {CardLayout} from './card-layout';
 
 export function CategoryCard() {
   const {data, status, error} = useQuery<CategoryData>({
